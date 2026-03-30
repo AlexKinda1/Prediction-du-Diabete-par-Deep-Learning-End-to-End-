@@ -1,0 +1,14 @@
+defaults:
+  - dataset: imagenet
+  - model: resnet
+
+train:
+  epochs: 10
+  batch_size: 32
+  lr: 1e-3
+  weight_decay: 1e-4
+
+dataset:
+  num_workers: 4
+  image_size: 224
+  num_classes: 1000

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+torch
+numpy
+scikit-learn
+pydantic
+pytest
+ruff
+black

@@ -1,0 +1,13 @@
+stages:
+  make_dataset:
+    cmd: python src/data/make_dataset.py
+    deps:
+      - src/data/make_dataset.py
+    outs:
+      - data
+  train:
+    cmd: python src/training/train.py
+    deps:
+      - src/training/train.py
+      - src/models/architectures.py
+      - data
