@@ -1,9 +1,38 @@
-fastapi
-uvicorn
-torch
-numpy
-scikit-learn
-pydantic
-pytest
-ruff
-black
+# ==========================================
+# 1. DEEP LEARNING & TENSEURS (Le Moteur)
+# ==========================================
+torch>=2.0.0
+
+# ==========================================
+# 2. DATA SCIENCE & MACHINE LEARNING (La Donnée)
+# ==========================================
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+imbalanced-learn>=0.11.0   # Pour la gestion du déséquilibre (Sprint 3)
+
+# ==========================================
+# 3. MLOPS & TRACKING (L'Usine logicielle)
+# ==========================================
+dvc>=3.0.0                 # Versioning de la donnée
+mlflow>=2.5.0              # Suivi des expériences et Model Registry
+hydra-core>=1.3.0          # Gestion des fichiers de configuration YAML
+
+# ==========================================
+# 4. DEPLOIEMENT & API (La Production)
+# ==========================================
+fastapi>=0.100.0           # Framework API REST
+uvicorn[standard]>=0.23.0  # Serveur web pour faire tourner FastAPI
+pydantic>=2.0.0            # Validation stricte des données de l'API
+
+# ==========================================
+# 5. QUALITE DU CODE & TESTS (La Rigueur)
+# ==========================================
+pytest>=7.4.0              # Pour exécuter nos tests unitaires
+black>=23.7.0              # Formateur de code (Linting)
+ruff>=0.0.280              # Linter ultra-rapide en Rust
+
+# ==========================================
+# 6. IA EXPLICABLE - XAI (Sprint 3)
+# ==========================================
+shap>=0.42.0               # Pour interpréter les décisions du réseau

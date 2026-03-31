@@ -1,8 +1,11 @@
 import torch
 
 def batch_predict(model, dataloader, device='cpu'):
+    
     model.eval()
+    
     preds = []
+    
     with torch.no_grad():
         for x in dataloader:
             x = x.to(device)
