@@ -9,12 +9,11 @@ from tqdm import tqdm
 import numpy as np
 from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score
 
-# Importation de tes modules (vérifie que les chemins correspondent à ton arborescence)
+
 from data.datamodules import get_dataloaders
 from src.models.architectures import DiabetesMLP
 
 def train_model_base():
-    # --- 1. CONFIGURATION ---
     INPUT_DIM = 31           # Ton nombre exact de features
     HIDDEN_DIMS = [64, 32, 16]
     DROPOUT_RATE = 0.2
@@ -22,7 +21,7 @@ def train_model_base():
     BATCH_SIZE = 64
     EPOCHS = 150
     
-    # Chemin absolu vers la racine du projet (depuis src/training/train.py, remonter 2 niveaux)
+    # Chemin vers les fichiers de données
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
     train_path = os.path.join(project_root, "Donnee_pretraite", "diabetes_train_pretraite.csv")
@@ -94,7 +93,7 @@ def train_model_base():
         y_probs_np = np.array(all_y_probs).flatten()
         
         # Pour Accuracy, F1 et Recall, il faut des classes dures (0 ou 1)
-        # On utilise le seuil standard de 0.5 pour l'instant
+        
         y_pred_classes = (y_probs_np >= 0.5).astype(int)
 
         # Calculs
