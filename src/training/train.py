@@ -14,7 +14,8 @@ from data.datamodules import get_dataloaders
 from src.models.architectures import DiabetesMLP
 
 def train_model_base():
-    INPUT_DIM = 31           # Ton nombre exact de features
+    # Configuration des hyperparamètres (sera mis plus tard dans le fichier hyperparametres.py)
+    INPUT_DIM = 31           
     HIDDEN_DIMS = [64, 32, 16]
     DROPOUT_RATE = 0.2
     LEARNING_RATE = 0.01
@@ -31,16 +32,16 @@ def train_model_base():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Démarrage de l'entraînement sur : {device}")
 
-    # --- 2. INITIALISATION ---
+    
     train_loader, val_loader, _ = get_dataloaders(
         train_path, val_path, test_path, batch_size=BATCH_SIZE
     )
-
+    
+    #Revoir en profondeur cette partie plus tard
     model = DiabetesMLP(input_dim=INPUT_DIM, hidden_dims=HIDDEN_DIMS, dropout_rate=DROPOUT_RATE).to(device)
     criterion = nn.BCEWithLogitsLoss() 
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE) # Chercher d'autres optimizers plus tard (RMSProp, AdamW, etc.)
 
-    # --- 3. BOUCLE D'ENTRAÎNEMENT ---
     for epoch in range(EPOCHS):
         model.train()
         total_train_loss = 0.0
@@ -49,19 +50,18 @@ def train_model_base():
         
         for X_batch, y_batch in progress_bar:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-
-            optimizer.zero_grad()
+             
+            # Appronfondir cette partie 
+            optimizer.zero_grad() # A chercher : Faut-il faire un zero_grad avant ou après le backward ? (ou les deux ?)
             logits = model(X_batch)
             loss = criterion(logits, y_batch)
             loss.backward()
             optimizer.step()
-
             total_train_loss += loss.item()
             progress_bar.set_postfix({"loss": f"{loss.item():.4f}"})
         
         avg_train_loss = total_train_loss / len(train_loader)
 
-        # --- 4. BOUCLE DE VALIDATION ET MÉTRIQUES ---
         model.eval()
         total_val_loss = 0.0
         
@@ -87,7 +87,7 @@ def train_model_base():
         
         avg_val_loss = total_val_loss / len(val_loader)
 
-        # --- 5. CALCUL DES MÉTRIQUES SCIKIT-LEARN ---
+        # Calcul des métrics pour scikit-learn (on doit faire ça à la fin de l'époque une fois qu'on a toutes les prédictions)
         # On convertit les listes en tableaux Numpy 1D
         y_true_np = np.array(all_y_true).flatten()
         y_probs_np = np.array(all_y_probs).flatten()

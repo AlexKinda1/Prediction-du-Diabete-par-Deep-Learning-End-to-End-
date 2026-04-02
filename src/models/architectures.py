@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 
 class DiabetesMLP(nn.Module):
-    def __init__(self, input_dim: int, hidden_dims: list = [64, 32, 16], dropout_rate: float = 0.2):
+    def __init__(self, input_dim: int, hidden_dims: list = [64, 32, 16], dropout_rate: float = 0.0):
         super(DiabetesMLP, self).__init__()
         
-        # On va stocker nos couches dans une liste PyTorch spéciale (ModuleList)
+        # On va stocker nos couches dans une liste PyTorch spéciale
         layers = []
         
         # Dimension courante (commence avec la taille de l'entrée)
@@ -13,10 +13,10 @@ class DiabetesMLP(nn.Module):
         
         # CONSTRUCTION DYNAMIQUE DES COUCHES CACHÉES
         for hidden_dim in hidden_dims:
-            layers.append(nn.Linear(current_dim, hidden_dim))   # 1. Multiplication Matricielle Wx + b
+            layers.append(nn.Linear(current_dim, hidden_dim))   
             layers.append(nn.BatchNorm1d(hidden_dim))           # 2. Stabilisation (Batch Normalization)
             layers.append(nn.ReLU())                            # 3. Non-linéarité avec la fonction d'activation ReLU
-            layers.append(nn.Dropout(dropout_rate))             # 4. Régularisation
+            layers.append(nn.Dropout(dropout_rate))             # 4. Régularisation (A chercher)
             
             # La dimension de sortie devient la dimension d'entrée de la prochaine couche
             current_dim = hidden_dim
@@ -24,9 +24,7 @@ class DiabetesMLP(nn.Module):
         # On regroupe toutes ces couches en un seul bloc séquentiel
         self.feature_extractor = nn.Sequential(*layers)
         
-        # --- COUCHE DE SORTIE ---
-        # Un seul neurone en sortie car c'est une classification binaire.
-        # Attention : Pas de Sigmoïde ici ! On retourne les "Logits" purs.
+        # COUCHE DE SORTIE
         self.classifier = nn.Linear(current_dim, 1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

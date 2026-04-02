@@ -5,19 +5,12 @@ import numpy as np
 
 
 class DiabetesDataset(Dataset):
-    """
-    Classe Dataset personnalisée pour le projet Diabète.
-    Hérite de torch.utils.data.Dataset.
-    """
     def __init__(self, csv_file):
-        # 1. Chargement des données pré-traitées du Livrable 1
         self.data = pd.read_csv(csv_file)
         
-        # 2. Séparation des features (X) et de la cible (y)
         self.X = self.data.drop(columns=['Diabetes_binary']).values
         self.y = self.data['Diabetes_binary'].values
         
-        # 3. Conversion en Tenseurs PyTorch (Float pour X, Float pour y car Binary Cross Entropy)
         self.X = torch.tensor(self.X, dtype=torch.float32)
         self.y = torch.tensor(self.y, dtype=torch.float32).unsqueeze(1) # Le unsqueeze(1) transforme [N] en [N, 1] pour correspondre à la sortie du réseau
 
@@ -30,7 +23,7 @@ class DiabetesDataset(Dataset):
         # Retourne UN échantillon et son label à l'index 'idx'
         return self.X[idx], self.y[idx]
 
-def get_dataloaders(train_path, val_path, test_path, batch_size=64):
+def get_dataloaders(train_path, val_path, test_path, batch_size: int = 64):
 
     # Instanciation des Datasets
     train_dataset = DiabetesDataset(train_path)
