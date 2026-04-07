@@ -15,7 +15,7 @@ import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix
 
 # Imports de ton projet
-from src.models.architectures import DiabetesMLP
+from src.models.architectures import DiabetesMLP, DiabetesRL
 from data.datamodules import get_dataloaders
 
 
@@ -43,7 +43,8 @@ def evaluate_model():
     # 2. CHARGEMENT DES DONNÉES ET DU MODÈLE
     _, val_loader, _ = get_dataloaders(train_path, val_path, test_path, batch_size=BATCH_SIZE)
     
-    model = DiabetesMLP(input_dim=INPUT_DIM, hidden_dims=HIDDEN_DIMS).to(device)
+    #model = DiabetesMLP(input_dim=INPUT_DIM, hidden_dims=HIDDEN_DIMS).to(device)
+    model = DiabetesRL(input_dim=INPUT_DIM).to(device)
     
     # On charge les poids sauvegardés
     try:
