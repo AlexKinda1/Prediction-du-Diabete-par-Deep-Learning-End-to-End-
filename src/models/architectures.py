@@ -15,7 +15,7 @@ class DiabetesMLP(nn.Module):
         for hidden_dim in hidden_dims:
             layers.append(nn.Linear(current_dim, hidden_dim))   
             layers.append(nn.BatchNorm1d(hidden_dim))           # 2. Stabilisation (Batch Normalization)
-            layers.append(nn.ReLU())                            # 3. Non-linéarité avec la fonction d'activation ReLU
+            layers.append(nn.SELU())                            # 3. Non-linéarité avec la fonction d'activation ReLU
             layers.append(nn.Dropout(dropout_rate))             # 4. Régularisation (A chercher)
             
             # La dimension de sortie devient la dimension d'entrée de la prochaine couche
@@ -34,6 +34,21 @@ class DiabetesMLP(nn.Module):
         
         # 2. Passage dans le neurone de décision final
         logits = self.classifier(features)
+        
+        return logits
+    
+class DiabetesRL(nn.Module):
+    def __init__(self, input_dim: int):
+        super(DiabetesRL, self).__init__()
+        
+        # COUCHE UNIQUE (Perceptron / Régression Logistique)
+        # On relie directement les variables d'entrée à l'unique neurone de sortie
+        self.classifier = nn.Linear(input_dim, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        
+        # Passage direct dans le neurone de décision
+        logits = self.classifier(x)
         
         return logits
    
