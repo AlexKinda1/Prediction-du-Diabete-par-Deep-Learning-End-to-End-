@@ -21,7 +21,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score, roc_curve
 from sklearn.metrics import classification_report, confusion_matrix
 
 from data.datamodules import get_dataloaders
@@ -115,6 +115,7 @@ def objective(trial):
     best_val_roc_auc = 0.0
     best_y_true = []
     best_y_pred_classes = []
+    best_optimal_threshold = 0.5 # Pour garder une trace du meilleur seuil
     best_model_state = None
 
     for epoch in range(EPOCHS):
@@ -161,13 +162,25 @@ def objective(trial):
         if val_roc_auc > best_val_roc_auc:
             best_val_roc_auc = val_roc_auc
             best_y_true = y_true_np
-            best_y_pred_classes = (y_probs_np >= 0.35).astype(int)
+            
+            # --- AJOUT: Calcul du seuil optimal avec l'Indice de Youden ---
+            fpr, tpr, thresholds = roc_curve(y_true_np, y_probs_np)
+            youden_index = tpr - fpr # J = Sensibilité + Spécificité - 1  <=>  TPR - FPR
+            optimal_idx = np.argmax(youden_index)
+            optimal_threshold = thresholds[optimal_idx]
+            best_optimal_threshold = optimal_threshold
+            
+            # Application du seuil optimal calculé dynamiquement
+            best_y_pred_classes = (y_probs_np >= optimal_threshold).astype(int)
             
             # On copie les poids du modèle vers le CPU pour éviter de saturer la VRAM (carte graphique)
             best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
         # Sauvegarde des métriques en temps réel pour Optuna
         trial.set_user_attr("roc_auc_history", val_roc_auc_history)
+        
+        # On peut aussi sauvegarder le seuil optimal dans les attributs d'Optuna si on veut le retrouver dans le dataframe
+        trial.set_user_attr("optimal_threshold", float(best_optimal_threshold))
 
         # Élagage (Pruning)
         trial.report(val_roc_auc, epoch)
@@ -183,9 +196,9 @@ def objective(trial):
 
     trial_num = trial.number
     
-    # 1. Classification Report (Basé sur la MEILLEURE époque)
+    # 1. Classification Report (Basé sur la MEILLEURE époque et le SEUIL OPTIMAL)
     print(f"\n{'='*40}")
-    print(f" CR_Trial_{trial_num} (Meilleure Époque)")
+    print(f" CR_Trial_{trial_num} (Meilleure Époque | Seuil Optimal: {best_optimal_threshold:.4f})")
     print(f"{'='*40}")
     print(classification_report(best_y_true, best_y_pred_classes, zero_division=0))
     
@@ -205,7 +218,7 @@ def objective(trial):
     cm = confusion_matrix(best_y_true, best_y_pred_classes)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
-    plt.title(f"CM_Trial_{trial_num} (Meilleure Époque)")
+    plt.title(f"CM_Trial_{trial_num} (Meilleure Époque | Seuil: {best_optimal_threshold:.2f})")
     plt.xlabel("Prédictions")
     plt.ylabel("Valeurs Réelles")
     plt.savefig(os.path.join(RESULTS_DIR, f"CM_Trial_{trial_num}.png"))
@@ -227,16 +240,22 @@ if __name__ == "__main__":
     print("="*50)
     
     # 1. Graphique d'évolution du ROC_AUC pour TOUS les trials
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6)) # Agrandissement pour laisser de la place à la légende
     for trial in study.trials:
         if "roc_auc_history" in trial.user_attrs:
             history = trial.user_attrs["roc_auc_history"]
-            plt.plot(history, alpha=0.6, linewidth=1.5)
+            # AJOUT: On nomme chaque ligne pour la légende
+            plt.plot(history, alpha=0.6, linewidth=1.5, label=f"Trial {trial.number}")
             
     plt.title("Évolution du ROC_AUC pour l'ensemble des Trials")
     plt.xlabel("Époques")
     plt.ylabel("Validation ROC AUC")
     plt.grid(True, linestyle='--', alpha=0.7)
+    
+    # AJOUT: Placement de la légende à l'extérieur pour ne pas cacher les courbes
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small', ncol=2)
+    plt.tight_layout() # Permet d'ajuster les marges pour que la légende rentre dans l'image
+    
     plt.savefig(os.path.join(RESULTS_DIR, "All_Trials_ROC_AUC.png"))
     plt.close()
     print(f"- Graphique des courbes ROC_AUC globales sauvegardé dans '{RESULTS_DIR}/'.")
@@ -244,6 +263,11 @@ if __name__ == "__main__":
     # 2. Tableau récapitulatif
     df_trials = study.trials_dataframe(attrs=("number", "value", "params", "state"))
     df_trials.rename(columns={'value': 'Best_ROC_AUC'}, inplace=True)
+    
+    # Extraction du seuil optimal pour l'ajouter au dataframe final
+    optimal_thresholds = [t.user_attrs.get('optimal_threshold', None) for t in study.trials]
+    df_trials['Optimal_Threshold'] = optimal_thresholds
+    
     csv_path = os.path.join(RESULTS_DIR, "recapitulatif_hyperparametres.csv")
     df_trials.to_csv(csv_path, index=False)
     print(f"- Tableau récapitulatif sauvegardé sous '{csv_path}'.")
@@ -263,3 +287,6 @@ if __name__ == "__main__":
     print("\nAperçu des 5 meilleurs Trials :")
     top_5 = df_trials[df_trials['state'] == 'COMPLETE'].sort_values(by='Best_ROC_AUC', ascending=False).head(5)
     print(top_5.to_string(index=False))
+    
+    
+    
