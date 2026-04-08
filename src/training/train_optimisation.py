@@ -14,7 +14,7 @@ import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 
-from codecarbon import EmissionsTracker
+from src.models.architectures import DiabetesMLP
 from data.datamodules import get_dataloaders
 
 import pandas as pd
@@ -25,8 +25,7 @@ from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_scor
 from sklearn.metrics import classification_report, confusion_matrix
 
 from data.datamodules import get_dataloaders
-# Assure-toi que l'import de ton architecture se fait correctement selon ton arborescence
-# from src.models.architectures import DiabetesMLP
+
 
 # =====================================================================
 # CONFIGURATION DU DOSSIER DE RÉSULTATS (Chemins absolus)
