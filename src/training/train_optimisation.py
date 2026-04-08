@@ -91,7 +91,7 @@ def objective(trial):
         
     INPUT_DIM = 37 
     BATCH_SIZE = 256
-    EPOCHS = 100 
+    EPOCHS = 150 
 
     # 2. Données et Modèle
     project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))

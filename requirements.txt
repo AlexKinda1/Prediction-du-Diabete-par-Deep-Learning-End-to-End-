@@ -36,4 +36,6 @@ ruff>=0.0.280              # Linter ultra-rapide en Rust
 # ==========================================
 # 6. IA EXPLICABLE - XAI (Sprint 3)
 # ==========================================
-shap>=0.42.0               # Pour interpréter les décisions du réseau
+shap>=0.42.0     
+optuna
+codecarbon          # Pour interpréter les décisions du réseau
