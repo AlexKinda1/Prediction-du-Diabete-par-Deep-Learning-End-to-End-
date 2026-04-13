@@ -253,7 +253,7 @@ def bloc1_evaluation(y_true, y_probs, threshold, results_dir):
 
 
 # ==============================================================================
-# BLOC 2 — ANALYSE DES BIAIS (ROBUSTE)
+# BLOC 2 — ANALYSE DES BIAIS
 # ==============================================================================
 
 def _compute_robust_metrics(y_true, y_probs, y_pred, mask, total_tests=1):
@@ -419,7 +419,7 @@ def _plot_confusion_matrix_by_group(df_bias, var_name, results_dir):
 
 def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, global_metrics):
     print("\n" + "="*60)
-    print("  BLOC 2 — ANALYSE DES BIAIS (STATISTIQUES)")
+    print("  BLOC 2 — ANALYSE DES BIAIS ")
     print("="*60)
 
     y_pred = (y_probs >= threshold).astype(int)
@@ -476,7 +476,7 @@ def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, gl
             all_alerts.append(alerts)
 
     print("\n" + "="*60)
-    print("  TABLEAU D'ALERTES (Z-test corrigé Bonferroni)")
+    print("  TABLEAU D'ALERTES (Z-test Bonferroni)")
     print("="*60)
     if all_alerts:
         df_alerts = pd.concat(all_alerts, ignore_index=True)
@@ -520,7 +520,7 @@ def main():
     script_start = time.perf_counter()
 
     print("\n" + "="*60)
-    print("  PREMIERE ÉVALUATION DU MODEL ")
+    print("  ÉVALUATION FINALE")
     print("="*60)
 
     results_dir = setup(CONFIG)
