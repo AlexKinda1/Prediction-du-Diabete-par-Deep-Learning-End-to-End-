@@ -90,13 +90,19 @@ def objective(trial):
         
     INPUT_DIM = 37 
     BATCH_SIZE = 256
-    EPOCHS = 100 
+    EPOCHS = 150 
 
     # 2. Données et Modèle
+# Dans CONFIG, remplace les chemins relatifs par des chemins absolus
+# construits depuis la position du script lui-même
+
+
+
+
     project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-    train_path = os.path.join(project_root, "Donnee_pretraite", "diabetes_train_pretraite.csv")
-    val_path = os.path.join(project_root, "Donnee_pretraite", "diabetes_val_pretraite.csv")
-    test_path = os.path.join(project_root, "Donnee_pretraite", "diabetes_test_pretraite.csv")
+    train_path = os.path.join(project_root, "Donnee_pretraite/diabetes_train_pretraite.csv")
+    val_path = os.path.join(project_root, "Donnee_pretraite/diabetes_val_pretraite.csv")
+    test_path = os.path.join(project_root, "Donnee_pretraite/diabetes_test_pretraite.csv")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_loader, val_loader, _ = get_dataloaders(train_path, val_path, test_path, batch_size=BATCH_SIZE)
