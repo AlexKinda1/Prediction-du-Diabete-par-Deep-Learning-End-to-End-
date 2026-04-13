@@ -1,0 +1,14 @@
+{
+  "inference_co2_g": 0.000372,
+  "inference_duration_s": 0.995,
+  "training_co2_g_estimated": 7.28,
+  "total_co2_g": 7.28,
+  "total_duration_s": 41.4,
+  "hypotheses": {
+    "device": "cpu",
+    "power_w": 65,
+    "duration_h": 2.0,
+    "country": "FR",
+    "factor_gco2_kwh": 56
+  }
+}

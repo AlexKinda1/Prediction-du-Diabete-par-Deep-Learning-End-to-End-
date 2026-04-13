@@ -1,0 +1,4 @@
+name: imagenet
+path: data/imagenet
+train_split: train
+val_split: val
