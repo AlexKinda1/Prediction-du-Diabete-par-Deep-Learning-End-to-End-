@@ -1,0 +1,14 @@
+Variable,Sous-groupe,Recall,DI,pvalue_Recall,Recall_global,Ecart_points,DI_alerte
+Age,18-24,0.3,0.0135,0.0004,0.7687,-46.9,⚠ Sous-détection
+Age,30-34,0.375,0.123,0.0,0.7687,-39.4,⚠ Sous-détection
+Age,25-29,0.4,0.0757,0.0001,0.7687,-36.9,⚠ Sous-détection
+Age,35-39,0.5109,0.1571,0.0,0.7687,-25.8,⚠ Sous-détection
+Age,40-44,0.5467,0.2563,0.0,0.7687,-22.2,⚠ Sous-détection
+Age,45-49,0.5975,0.3166,0.0,0.7687,-17.1,⚠ Sous-détection
+Age,50-54,0.6807,0.475,0.0,0.7687,-8.8,⚠ Sous-détection
+Income,Revenu 8,0.6073,0.323,0.0,0.7687,-16.1,⚠ Sous-détection
+Income,Revenu 7,0.6977,0.4894,0.0,0.7687,-7.1,⚠ Sous-détection
+Education,"Niv.6
+(Bac+3 et +)",0.6802,0.3711,0.0,0.7687,-8.8,⚠ Sous-détection
+GenHlth,1,0.2308,0.0412,0.0,0.7687,-53.8,⚠ Sous-détection
+GenHlth,2,0.4251,0.1819,0.0,0.7687,-34.4,⚠ Sous-détection

@@ -1,0 +1,3 @@
+n_total,n_diabetiques,pct_diab,ROC_AUC,Recall,Precision,F1,TPR,FPR,TP,FN,FP,TN,pos_rate,Sous-groupe,pvalue_Recall,Alerte_Recall,DI
+23267,3077,13.2,0.8247,0.7283,0.3126,0.4375,0.7283,0.244,2241,836,4927,15263,0.3081,(Niv.5-6),0.0,True,0.6405
+11155,2188,19.6,0.793,0.8254,0.3366,0.4782,0.8254,0.3969,1806,382,3559,5408,0.481,(Niv.1-4),0.0,False,1.0

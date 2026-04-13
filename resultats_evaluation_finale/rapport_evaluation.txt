@@ -1,0 +1,28 @@
+=================================================================
+ RAPPORT D'ÉVALUATION FINALE — MODÈLE CHAMPION (Trial 17)
+=================================================================
+
+  ROC AUC (indépendant du seuil)  : 0.8173
+  Average Precision               : 0.4418
+  Seuil de décision utilisé       : 0.3611 (Youden)
+
+-----------------------------------------------------------------
+ Rapport de classification — seuil optimal
+-----------------------------------------------------------------
+                precision    recall  f1-score   support
+
+      Sain (0)       0.94      0.71      0.81     29157
+Diabétique (1)       0.32      0.77      0.45      5265
+
+      accuracy                           0.72     34422
+     macro avg       0.63      0.74      0.63     34422
+  weighted avg       0.85      0.72      0.76     34422
+
+-----------------------------------------------------------------
+ Métrique                    Seuil 0.5  Seuil optimal
+ -------------------------- ---------- --------------
+ Accuracy                       0.7361         0.7181
+ Recall  Diabétiques            0.7349         0.7687
+ Précision Diabétiques          0.3348         0.3229
+ F1 Diabétiques                 0.4600         0.4548
+=================================================================
