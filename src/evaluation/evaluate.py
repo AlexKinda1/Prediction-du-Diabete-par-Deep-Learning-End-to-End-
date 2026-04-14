@@ -53,22 +53,22 @@ script_dir   = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, "../.."))
 
 # Chemin vers le dossier contenant le modèle et ses paramètres
-model_dir = os.path.join(project_root, "src/training/resultats_optuna_1")
-params_file = os.path.join(model_dir, "optuna_params.json")
+model_dir = os.path.join(project_root, "src/training/resultats_optuna_mlflow")
+params_file = os.path.join(model_dir, "optuna_params.json") 
 
 # Fonction pour charger la configuration dynamiquement
 def load_dynamic_config():
     # Valeurs par défaut au cas où le fichier JSON n'existe pas encore
     config = {
-        "MODEL_PATH"        : os.path.join(model_dir, "meilleur_modele_trial_17.pth"),
+        "MODEL_PATH"        : os.path.join(model_dir, "meilleur_modele_trial_7.pth"),
         "INPUT_DIM"         : 37,
-        "HIDDEN_DIMS"       : [64, 32],
-        "DROPOUT_RATE"      : 0.3353,
-        "OPTIMAL_THRESHOLD" : 0.3413,
+        "HIDDEN_DIMS"       : [64, 32, 16],
+        "DROPOUT_RATE"      : 0.24,
+        "OPTIMAL_THRESHOLD" : 0.35,
         "TRAIN_PATH" : os.path.join(project_root, "Donnee_pretraite/diabetes_train_pretraite.csv"),
         "VAL_PATH"   : os.path.join(project_root, "Donnee_pretraite/diabetes_val_pretraite.csv"),
         "TEST_PATH"  : os.path.join(project_root, "Donnee_pretraite/diabetes_test_pretraite.csv"),
-        "RESULTS_DIR": "resultats_evaluation_v2_robuste",
+        "RESULTS_DIR": "resultats_evaluation_v3",
         "BATCH_SIZE" : 256,
         "OPTUNA_DURATION_H" : 2.0,
         "TRAINING_DEVICE"   : "cpu",
@@ -82,7 +82,7 @@ def load_dynamic_config():
             config["HIDDEN_DIMS"] = optuna_params.get("hidden_dims", config["HIDDEN_DIMS"])
             config["DROPOUT_RATE"] = optuna_params.get("dropout_rate", config["DROPOUT_RATE"])
             config["OPTIMAL_THRESHOLD"] = optuna_params.get("optimal_threshold", config["OPTIMAL_THRESHOLD"])
-            print(f"[INFO] Paramètres chargés dynamiquement depuis {params_file}")
+            print(f" Paramètres chargés dynamiquement depuis {params_file}")
     else:
         print(f"Fichier {params_file} introuvable. Utilisation des valeurs par défaut.")
         
@@ -475,7 +475,7 @@ def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, gl
         print(df_alerts.to_string(index=False))
         df_alerts.to_csv(os.path.join(results_dir, "alertes_biais_global.csv"), index=False)
     else:
-        print("  Aucun biais statistiquement significatif détecté (simples ou croisés).")
+        print("  Aucun biais statistiquement significatif détecté.")
 
 # ==============================================================================
 # POINT D'ENTRÉE PRINCIPAL
