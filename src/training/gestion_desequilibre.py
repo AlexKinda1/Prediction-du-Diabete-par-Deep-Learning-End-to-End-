@@ -62,3 +62,27 @@ shap_values = explainer(X_test)
 
 # Graphique global
 shap.summary_plot(shap_values, X_test)
+
+from lime.lime_tabular import LimeTabularExplainer
+import numpy as np
+
+# Initialiser LIME
+explainer = LimeTabularExplainer(
+    X_train,
+    mode="classification",
+    feature_names=df_train.drop("Diabetes_binary", axis=1).columns,
+    class_names=["Non diabétique", "Diabétique"],
+    discretize_continuous=True
+)
+
+# Choisir un individu (exemple : le premier)
+i = 0
+
+exp = explainer.explain_instance(
+    X_test[i],
+    model.predict_proba,
+    num_features=10
+)
+
+# Affichage dans le terminal
+print(exp.as_list())
