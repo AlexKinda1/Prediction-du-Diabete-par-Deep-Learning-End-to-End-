@@ -1,0 +1,13 @@
+n_total,n_diabetiques,Recall,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
+8317,708,0.596,0.1448,0.0361,0.0079,422,286,1102,6507,0.1832,0.0,True,"Femmes
++ Revenus élevés",0.3013
+8370,1110,0.6865,0.2545,0.0273,0.01,762,348,1848,5412,0.3118,0.0,True,"Hommes
++ Revenus élevés",0.5127
+7053,1084,0.7795,0.3148,0.0247,0.0118,845,239,1879,4090,0.3862,1.0,False,"Femmes
++ Revenus moyens",0.6351
+5030,968,0.8192,0.4077,0.0242,0.0151,793,175,1656,2406,0.4869,0.0007,False,"Hommes
++ Revenus moyens",0.8007
+1947,480,0.8917,0.5153,0.0278,0.0256,428,52,756,711,0.6081,0.0,False,"Hommes
++ Faibles revenus",1.0
+3705,915,0.8929,0.4925,0.02,0.0186,817,98,1374,1416,0.5914,0.0,False,"Femmes
++ Faibles revenus",0.9725

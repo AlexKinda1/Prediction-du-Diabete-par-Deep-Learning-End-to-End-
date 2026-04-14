@@ -7,3 +7,17 @@ Income,Revenus élevés,0.6513,0.4148,0.0,0.7725
 Education,(Niv.5-6),0.7319,0.6433,0.0,0.7725
 GenHlth,(1),0.2367,0.042,0.0,0.7725
 GenHlth,(2),0.4332,0.1868,0.0,0.7725
+Sex_x_Age,"Hommes
++ Jeunes adultes (18-44 ans)",0.4921,0.164,0.0,0.7725
+Sex_x_Age,"Femmes
++ Jeunes adultes (18-44 ans)",0.5,0.1382,0.0,0.7725
+Sex_x_Age,"Hommes
++ Adultes (45-64 ans)",0.7393,0.6084,0.0217,0.7725
+Sex_x_Income,"Femmes
++ Revenus élevés",0.596,0.3013,0.0,0.7725
+Sex_x_Income,"Hommes
++ Revenus élevés",0.6865,0.5127,0.0,0.7725
+Sex_x_Education,"Femmes
++ (Niv.5-6)",0.7199,0.5476,0.0,0.7725
+Sex_x_Education,"Hommes
++ (Niv.5-6)",0.7432,0.7301,0.0036,0.7725
