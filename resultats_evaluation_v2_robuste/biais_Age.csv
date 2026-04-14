@@ -1,7 +1,7 @@
-n_total,n_diabetiques,n_sains,pct_diab,ROC_AUC,Recall,TPR,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
-7385,320,7065,4.3,0.8409,0.4969,0.4969,0.0752,0.0548,0.0061,159,161,531,6534,0.0934,0.0,True,"Jeunes adultes
+n_total,n_diabetiques,Recall,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
+7385,320,0.4969,0.0752,0.0548,0.0061,159,161,531,6534,0.0934,0.0,True,"Jeunes adultes
 (18-44 ans)",0.1657
-14453,2231,12222,15.4,0.8208,0.745,0.745,0.2647,0.0181,0.0078,1662,569,3235,8987,0.3388,0.0001,True,"Adultes
+14453,2231,0.745,0.2647,0.0181,0.0078,1662,569,3235,8987,0.3388,0.0001,True,"Adultes
 (45-64 ans)",0.6009
-12584,2714,9870,21.6,0.7472,0.8276,0.8276,0.4913,0.0142,0.0099,2246,468,4849,5021,0.5638,0.0,False,"Seniors
+12584,2714,0.8276,0.4913,0.0142,0.0099,2246,468,4849,5021,0.5638,0.0,False,"Seniors
 (65 ans et +)",1.0

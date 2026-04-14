@@ -2,20 +2,17 @@
   Ce script est organisé en 3 blocs indépendants :
 
   BLOC 1 — Évaluation standard sur le jeu de test
-           Matrice de confusion, ROC, Précision-Rappel,
-           distribution des probabilités, rapport comparatif seuil 0.5 vs optimal
+           Matrice de confusion, ROC, Précision-Rappel (épuré)
 
   BLOC 2 — Analyse des biais par sous-groupes (version robuste)
            Variables et méthodes améliorées :
-             • Groupes reconstruits dynamiquement via pd.cut / seuils adaptatifs
-             • Statistiques rigoureuses (Z-test "Groupe vs Reste", Correction Bonferroni)
-             • Equalized Odds robuste avec Intervalles de Confiance à 95%
-             • Matrices de confusion cliniques par groupe
-             • Disparate impact (sous-détection uniquement)
+             • Groupes reconstruits dynamiquement via pd.cut
+             • Statistiques rigoureuses (Z-test)
+             • Equalized Odds robuste avec Intervalles de Confiance
+             • Matrices de confusion cliniques par groupe (sans ombrage)
+             • Visualisation du Disparate Impact (règle des 80%)
 
   BLOC 3 — Empreinte carbone & temps d'exécution
-           Mesure réelle de l'inférence (CodeCarbon)
-           Estimation de l'entraînement Optuna
 ================================================================================
 """
 
@@ -28,7 +25,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import matplotlib.gridspec as gridspec
 import seaborn as sns
 import torch
 from scipy import stats
@@ -51,43 +47,52 @@ from data.datamodules import get_dataloaders
 
 
 # ==============================================================================
-# 0. CONFIGURATION GLOBALE
+# 0. CONFIGURATION GLOBALE & CHARGEMENT DYNAMIQUE
 # ==============================================================================
 script_dir   = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, "../.."))
 
-CONFIG = {
-    "MODEL_PATH"        : os.path.join(project_root, "src/training/resultats_optuna_1/meilleur_modele_trial_17.pth"),
-    "INPUT_DIM"         : 37,
-    "HIDDEN_DIMS"       : [64, 32],
-    "DROPOUT_RATE"      : 0.3353,
-    "OPTIMAL_THRESHOLD" : 0.3413,
+# Chemin vers le dossier contenant le modèle et ses paramètres
+model_dir = os.path.join(project_root, "src/training/resultats_optuna_1")
+params_file = os.path.join(model_dir, "optuna_params.json")
 
-    "TRAIN_PATH" : os.path.join(project_root, "Donnee_pretraite/diabetes_train_pretraite.csv"),
-    "VAL_PATH"   : os.path.join(project_root, "Donnee_pretraite/diabetes_val_pretraite.csv"),
-    "TEST_PATH"  : os.path.join(project_root, "Donnee_pretraite/diabetes_test_pretraite.csv"),
+# Fonction pour charger la configuration dynamiquement
+def load_dynamic_config():
+    # Valeurs par défaut au cas où le fichier JSON n'existe pas encore
+    config = {
+        "MODEL_PATH"        : os.path.join(model_dir, "meilleur_modele_trial_17.pth"),
+        "INPUT_DIM"         : 37,
+        "HIDDEN_DIMS"       : [64, 32],
+        "DROPOUT_RATE"      : 0.3353,
+        "OPTIMAL_THRESHOLD" : 0.3413,
+        "TRAIN_PATH" : os.path.join(project_root, "Donnee_pretraite/diabetes_train_pretraite.csv"),
+        "VAL_PATH"   : os.path.join(project_root, "Donnee_pretraite/diabetes_val_pretraite.csv"),
+        "TEST_PATH"  : os.path.join(project_root, "Donnee_pretraite/diabetes_test_pretraite.csv"),
+        "RESULTS_DIR": "resultats_evaluation_v2_robuste",
+        "BATCH_SIZE" : 256,
+        "OPTUNA_DURATION_H" : 2.0,
+        "TRAINING_DEVICE"   : "cpu",
+        "COUNTRY_CODE"      : "FR",
+    }
+    
+    # Écrasement par les valeurs réelles d'Optuna si le fichier existe
+    if os.path.exists(params_file):
+        with open(params_file, 'r') as f:
+            optuna_params = json.load(f)
+            config["HIDDEN_DIMS"] = optuna_params.get("hidden_dims", config["HIDDEN_DIMS"])
+            config["DROPOUT_RATE"] = optuna_params.get("dropout_rate", config["DROPOUT_RATE"])
+            config["OPTIMAL_THRESHOLD"] = optuna_params.get("optimal_threshold", config["OPTIMAL_THRESHOLD"])
+            print(f"[INFO] Paramètres chargés dynamiquement depuis {params_file}")
+    else:
+        print(f"Fichier {params_file} introuvable. Utilisation des valeurs par défaut.")
+        
+    return config
 
-    "RESULTS_DIR"        : "resultats_evaluation_v2_robuste",
-    "BATCH_SIZE"         : 256,
-
-    "OPTUNA_DURATION_H"  : 2.0,
-    "TRAINING_DEVICE"    : "cpu",
-    "COUNTRY_CODE"       : "FR",
-}
+CONFIG = load_dynamic_config()
 
 EMISSION_FACTORS = {"FR": 56, "US": 386}
 DEVICE_POWER_W = {"cpu": 65, "gpu": 250}
 
-CO2_REFERENCES = {
-    "Entraînement GPT-3\n(OpenAI, 2020)"  : 552_000_000,
-    "Vol Paris → New York\n(aller simple)" : 1_000_000,
-    "Voiture thermique\n(100 km)"          : 21_000,
-    "Email avec\npièce jointe"             : 50,
-    "Streaming vidéo HD\n(1 heure)"        : 36,
-    "Chargement\npage web"                 : 0.5,
-}
-
-# Mapping constants pour les variables one-hot
 INCOME_GROUP_MAP = {1: "Faibles revenus", 2: "Faibles revenus", 3: "Faibles revenus", 
                     4: "Revenus moyens", 5: "Revenus moyens", 6: "Revenus moyens", 
                     7: "Revenus élevés", 8: "Revenus élevés"}
@@ -101,7 +106,6 @@ GENHLTH_LABELS = {1: "(1)", 2: "(2)", 3: "(3)", 4: "(4)", 5: "(5)"}
 
 def setup(config: dict) -> str:
     os.makedirs(config["RESULTS_DIR"], exist_ok=True)
-    print(f"\n[INFO] Résultats → {config['RESULTS_DIR']}/")
     return config["RESULTS_DIR"]
 
 def load_model(config: dict, device: torch.device) -> torch.nn.Module:
@@ -112,11 +116,10 @@ def load_model(config: dict, device: torch.device) -> torch.nn.Module:
     ).to(device)
 
     if not os.path.exists(config["MODEL_PATH"]):
-        raise FileNotFoundError(f"[ERREUR] Modèle introuvable : {config['MODEL_PATH']}")
+        raise FileNotFoundError(f" Modèle introuvable : {config['MODEL_PATH']}")
 
     model.load_state_dict(torch.load(config["MODEL_PATH"], map_location=device))
     model.eval()
-    print(f"[INFO] Modèle chargé : {config['MODEL_PATH']}")
     return model
 
 def get_predictions(model, loader, device: torch.device, tracker: EmissionsTracker = None):
@@ -139,25 +142,14 @@ def get_predictions(model, loader, device: torch.device, tracker: EmissionsTrack
 
 
 def reconstruct_groups_robust(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Reconstruit les groupes sociodémographiques de manière robuste.
-    Ne dépend plus de valeurs exactes codées en dur pour l'âge et le sexe.
-    """
     result = pd.DataFrame(index=df.index)
-
-    # Age : Découpage par intervalles (bins). 
-    # NOTE: Si "Age" est standardisé, ajustez les limites de 'bins' selon votre standardisation.
-    # Ici, nous utilisons des seuils arbitraires illustratifs (-0.6, 0.3) pour du StandardScaler.
     result["Age"] = pd.cut(
         df["Age"], 
         bins=[-np.inf, -0.6, 0.3, np.inf], 
         labels=["Jeunes adultes\n(18-44 ans)", "Adultes\n(45-64 ans)", "Seniors\n(65 ans et +)"]
     )
-
-    # Sex : Seuil < 0.5 pour éviter les erreurs d'arrondi des floats
     result["Sex"] = np.where(df["Sex"] < 0.5, "Femmes", "Hommes")
 
-    # Income, Education, GenHlth : Extraction depuis les colonnes One-Hot (Robuste par nature)
     income_cols = [c for c in df.columns if c.startswith("Income_")]
     if income_cols:
         result["Income"] = df[income_cols].idxmax(axis=1).str.extract(r"Income_(\d+)")[0].astype(int).map(INCOME_GROUP_MAP)
@@ -176,77 +168,42 @@ def reconstruct_groups_robust(df: pd.DataFrame) -> pd.DataFrame:
 # ==============================================================================
 # BLOC 1 — ÉVALUATION STANDARD SUR LE JEU DE TEST
 # ==============================================================================
-# [NOTE] Le Bloc 1 reste identique à votre code original (parfait pour l'évaluation globale)
+
 def bloc1_evaluation(y_true, y_probs, threshold, results_dir):
     print("\n" + "="*60)
     print("  BLOC 1 — ÉVALUATION SUR LE JEU DE TEST")
     print("="*60)
 
     y_pred    = (y_probs >= threshold).astype(int)
-    y_pred_02 = (y_probs >= 0.2).astype(int)
-
     auc = roc_auc_score(y_true, y_probs)
     ap  = average_precision_score(y_true, y_probs)
 
-    lines = [
-        "=" * 65,
-        " RAPPORT D'ÉVALUATION FINALE — MODÈLE CHAMPION",
-        "=" * 65,
-        f"\n  ROC AUC (indépendant du seuil)  : {auc:.4f}",
-        f"  Average Precision               : {ap:.4f}",
-        f"  Seuil de décision utilisé       : {threshold:.4f} (Youden)\n",
-        "-" * 65,
-        " Rapport de classification — seuil optimal",
-        "-" * 65,
-        classification_report(y_true, y_pred, target_names=["Sain (0)", "Diabétique (1)"], zero_division=0),
-        "-" * 65,
-        f" {'Métrique':<26} {'Seuil 0.5':>10} {'Seuil optimal':>14}",
-        f" {'-'*26} {'-'*10} {'-'*14}",
-        f" {'Accuracy':<26}{(y_pred_02 == y_true).mean():>10.4f}{(y_pred == y_true).mean():>14.4f}",
-        f" {'Recall Diabétiques':<26}{recall_score(y_true, y_pred_02, pos_label=1, zero_division=0):>10.4f}{recall_score(y_true, y_pred, pos_label=1, zero_division=0):>14.4f}",
-        f" {'Précision Diabétiques':<26}{precision_score(y_true, y_pred_02, pos_label=1, zero_division=0):>10.4f}{precision_score(y_true, y_pred, pos_label=1, zero_division=0):>14.4f}",
-        f" {'F1 Diabétiques':<26}{f1_score(y_true, y_pred_02, pos_label=1, zero_division=0):>10.4f}{f1_score(y_true, y_pred, pos_label=1, zero_division=0):>14.4f}",
-        "=" * 65,
-    ]
-    report = "\n".join(lines)
-    print(report)
-    with open(os.path.join(results_dir, "rapport_evaluation.txt"), "w", encoding="utf-8") as f:
-        f.write(report)
+    # Affichage épuré sur une seule ligne (1x3)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig.suptitle("Évaluation du Modèle", fontsize=15, fontweight="bold", y=1.05)
 
-    # 1.2 Graphiques en grille...
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
-    fig.suptitle("Évaluation du Modèle Champion — Jeu de Test", fontsize=15, fontweight="bold", y=1.01)
-
-    # Matrice
-    sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt="d", cmap="Blues", ax=axes[0,0],
+    # 1. Matrice de confusion
+    sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt="d", cmap="Blues", ax=axes[0],
                 xticklabels=["Prédit Sain", "Prédit Diab."], yticklabels=["Vrai Sain", "Vrai Diab."])
-    axes[0,0].set_title(f"Matrice de Confusion\n(Seuil optimal = {threshold:.4f})")
+    axes[0].set_title(f"Matrice de Confusion\n(Seuil optimal = {threshold:.4f})")
     
-    # ROC
+    # 2. ROC
     fpr_arr, tpr_arr, _ = roc_curve(y_true, y_probs)
-    axes[0,1].plot(fpr_arr, tpr_arr, color="steelblue", lw=2, label=f"Courbe ROC (AUC = {auc:.4f})")
-    axes[0,1].plot([0, 1], [0, 1], "k--", lw=1)
-    axes[0,1].fill_between(fpr_arr, tpr_arr, alpha=0.08, color="steelblue")
-    axes[0,1].set_title("Courbe ROC")
-    axes[0,1].legend()
+    axes[1].plot(fpr_arr, tpr_arr, color="steelblue", lw=2, label=f"Courbe ROC (AUC = {auc:.4f})")
+    axes[1].plot([0, 1], [0, 1], "k--", lw=1)
+    axes[1].fill_between(fpr_arr, tpr_arr, alpha=0.08, color="steelblue")
+    axes[1].set_title("Courbe ROC")
+    axes[1].legend()
 
-    # P-R
+    # 3. Précision-Rappel
     prec_arr, rec_arr, _ = precision_recall_curve(y_true, y_probs)
-    axes[1,0].plot(rec_arr, prec_arr, color="darkorange", lw=2, label=f"Courbe P-R (AP = {ap:.4f})")
-    axes[1,0].fill_between(rec_arr, prec_arr, y_true.mean(), alpha=0.08, color="darkorange")
-    axes[1,0].set_title("Courbe Précision-Rappel")
-    axes[1,0].legend()
-
-    # Dist
-    df_prob = pd.DataFrame({"prob": y_probs, "label": y_true})
-    axes[1,1].hist(df_prob[df_prob["label"] == 0]["prob"], bins=60, alpha=0.55, color="steelblue", label="Sains", density=True)
-    axes[1,1].hist(df_prob[df_prob["label"] == 1]["prob"], bins=60, alpha=0.55, color="tomato", label="Diabétiques", density=True)
-    axes[1,1].axvline(threshold, color="black", linestyle="--", lw=2)
-    axes[1,1].set_title("Distribution des Probabilités")
-    axes[1,1].legend()
+    axes[2].plot(rec_arr, prec_arr, color="darkorange", lw=2, label=f"Courbe P-R (AP = {ap:.4f})")
+    axes[2].fill_between(rec_arr, prec_arr, y_true.mean(), alpha=0.08, color="darkorange")
+    axes[2].set_title("Courbe Précision-Rappel")
+    axes[2].legend()
 
     plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, "evaluation_complete.png"), dpi=150, bbox_inches="tight")
+    plt.savefig(os.path.join(results_dir, "evaluation_epuree.png"), dpi=150, bbox_inches="tight")
     plt.close()
 
     return {"auc": auc, "ap": ap, "recall_opt": recall_score(y_true, y_pred, pos_label=1, zero_division=0)}
@@ -257,20 +214,15 @@ def bloc1_evaluation(y_true, y_probs, threshold, results_dir):
 # ==============================================================================
 
 def _compute_robust_metrics(y_true, y_probs, y_pred, mask, total_tests=1):
-    """
-    Calcule les métriques avec intervalles de confiance et correction de Bonferroni.
-    Le groupe cible est comparé au *reste* de la population.
-    """
     n_group = int(mask.sum())
     n_pos_group = int(y_true[mask].sum())
     n_neg_group = n_group - n_pos_group
     
     if n_pos_group == 0 or n_neg_group == 0:
-        return None # Impossible de calculer TPR ou FPR proprement
+        return None
 
     yt = y_true[mask]
     yp = y_pred[mask]
-    yp_prob = y_probs[mask]
     
     tp = int(((yp == 1) & (yt == 1)).sum())
     fn = int(((yp == 0) & (yt == 1)).sum())
@@ -280,11 +232,9 @@ def _compute_robust_metrics(y_true, y_probs, y_pred, mask, total_tests=1):
     tpr = tp / n_pos_group
     fpr = fp / n_neg_group
     
-    # Erreur standard pour intervalles de confiance (95%) : Z = 1.96
     ci_tpr = 1.96 * np.sqrt((tpr * (1 - tpr)) / n_pos_group) if n_pos_group > 0 else 0
     ci_fpr = 1.96 * np.sqrt((fpr * (1 - fpr)) / n_neg_group) if n_neg_group > 0 else 0
 
-    # Z-test : Comparer le groupe au RESTE de la population
     mask_rest = ~mask
     n_pos_rest = int(y_true[mask_rest].sum())
     tp_rest = int(((y_pred[mask_rest] == 1) & (y_true[mask_rest] == 1)).sum())
@@ -299,35 +249,80 @@ def _compute_robust_metrics(y_true, y_probs, y_pred, mask, total_tests=1):
     else:
         p_value = 1.0
 
-    # Correction de Bonferroni
     p_value_adj = min(1.0, p_value * total_tests)
 
-    try:
-        auc = roc_auc_score(yt, yp_prob)
-    except ValueError:
-        auc = 0.0
-
     return {
-        "n_total"      : n_group,
-        "n_diabetiques": n_pos_group,
-        "n_sains"      : n_neg_group,
-        "pct_diab"     : round(100 * n_pos_group / n_group, 1),
-        "ROC_AUC"      : round(auc, 4),
-        "Recall"       : round(tpr, 4),
-        "TPR"          : round(tpr, 4),
-        "FPR"          : round(fpr, 4),
-        "CI_TPR"       : round(ci_tpr, 4),
-        "CI_FPR"       : round(ci_fpr, 4),
+        "n_total": n_group, "n_diabetiques": n_pos_group,
+        "Recall": round(tpr, 4), "FPR": round(fpr, 4),
+        "CI_TPR": round(ci_tpr, 4), "CI_FPR": round(ci_fpr, 4),
         "TP": tp, "FN": fn, "FP": fp, "TN": tn,
-        "pos_rate"     : round(yp.mean(), 4),
-        "pvalue_adj"   : round(p_value_adj, 4),
+        "pos_rate": round(yp.mean(), 4),
+        "pvalue_adj": round(p_value_adj, 4),
         "Alerte_Recall": bool((p_value_adj < 0.05) and (tpr < (tp_rest/n_pos_rest if n_pos_rest>0 else 0)))
     }
 
+def _plot_disparate_impact(df_bias, var_name, results_dir):
+    """
+    Visualisation du Disparate Impact (Règle des 4/5)
+    """
+    n = len(df_bias)
+    fig, ax = plt.subplots(figsize=(10, max(4, n * 0.9 + 2)))
+
+    groups = df_bias["Sous-groupe"].astype(str)
+    di     = df_bias["DI"]
+    colors = ["tomato" if v < 0.8 else "mediumseagreen" for v in di]
+
+    bars = ax.barh(groups, di, color=colors, alpha=0.85, edgecolor="white", height=0.6)
+
+    ax.axvline(1.0, color="black", linestyle="-", lw=1.5, label="Référence (DI = 1.0)")
+    ax.axvline(0.8, color="tomato", linestyle="--", lw=1.5, label="Seuil d'alerte (DI = 0.80)")
+    ax.axvspan(0.8, 1.2, alpha=0.06, color="green", label="Zone équitable (≥ 0.80)")
+
+    for bar, val in zip(bars, di):
+        ax.text(val + 0.01, bar.get_y() + bar.get_height() / 2, f"{val:.2f}", va="center", fontsize=10, fontweight="bold")
+
+    ax.set_xlabel("Disparate Impact (DI)", fontsize=10)
+    ax.set_title(f"Disparate Impact — {var_name}\n(DI < 0.80 = Sous-détection potentielle)", fontsize=11)
+    ax.legend(fontsize=9, loc="lower right")
+    ax.grid(axis="x", linestyle="--", alpha=0.4)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, f"biais_{var_name}_disparate_impact.png"), dpi=150, bbox_inches="tight")
+    plt.close()
+
+
+def _plot_confusion_matrix_by_group(df_bias, var_name, results_dir):
+    n_groups = len(df_bias)
+    ncols = min(3, n_groups)
+    nrows = int(np.ceil(n_groups / ncols))
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4.5, nrows * 4))
+    fig.suptitle(f"Matrices de Confusion par sous-groupe — {var_name}", fontsize=12, fontweight="bold")
+    axes_flat = np.array(axes).flatten() if n_groups > 1 else [axes]
+
+    for idx, (_, row) in enumerate(df_bias.iterrows()):
+        ax = axes_flat[idx]
+        cm_group = np.array([[row["TN"], row["FP"]], [row["FN"], row["TP"]]])
+        
+        sns.heatmap(cm_group, annot=True, fmt="d", cmap="Blues", ax=ax, cbar=False,
+                    xticklabels=["Prédit Sain", "Prédit Diab."], yticklabels=["Vrai Sain", "Vrai Diab."],
+                    annot_kws={"size": 12, "weight": "bold"}, linewidths=0.5, linecolor="white")
+        
+        # Le patch rouge et l'annotation rouge ont été supprimés ici comme demandé.
+        
+        ax.set_title(f"{row['Sous-groupe']}\nRecall = {row['Recall']:.2f} | n={row['n_diabetiques']}", 
+                     fontsize=10, color="red" if row["Alerte_Recall"] else "black")
+
+    for idx in range(n_groups, len(axes_flat)):
+        axes_flat[idx].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(results_dir, f"biais_{var_name}_confusion_matrices.png"), dpi=150, bbox_inches="tight")
+    plt.close()
 
 def _plot_equalized_odds_robust(df_bias, var_name, global_tpr, global_fpr, results_dir):
     """
-    Nouveau graphique "Crosshair" avec intervalles de confiance et zone de tolérance.
+    Graphique "Crosshair" avec intervalles de confiance et zone de tolérance.
     """
     fig, ax = plt.subplots(figsize=(10, 8))
     palette = sns.color_palette("husl", len(df_bias))
@@ -342,7 +337,7 @@ def _plot_equalized_odds_robust(df_bias, var_name, global_tpr, global_fpr, resul
     ax.axvline(global_fpr, color="black", linestyle="--", lw=1.5, alpha=0.7)
 
     for i, (_, row) in enumerate(df_bias.iterrows()):
-        color = palette[i]
+        color = palette[i % len(palette)]
         label = str(row["Sous-groupe"]).replace("\n", " ")
         
         # Point central
@@ -354,14 +349,15 @@ def _plot_equalized_odds_robust(df_bias, var_name, global_tpr, global_fpr, resul
                     fmt='none', ecolor=color, alpha=0.7, capsize=5, lw=2, zorder=4)
         
         # Annotation claire
+        alerte = row.get("Alerte_Recall", False)
         ax.annotate(
             f"{label}\n(n={row['n_diabetiques']})",
             xy=(row["FPR"], row["Recall"]),
             xytext=(10, 10),
             textcoords="offset points",
             fontsize=9,
-            fontweight="bold" if row["Alerte_Recall"] else "normal",
-            color="darkred" if row["Alerte_Recall"] else "black",
+            fontweight="bold" if alerte else "normal",
+            color="darkred" if alerte else "black",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=color, alpha=0.85)
         )
 
@@ -385,38 +381,6 @@ def _plot_equalized_odds_robust(df_bias, var_name, global_tpr, global_fpr, resul
     plt.savefig(os.path.join(results_dir, f"biais_{var_name}_equalized_odds.png"), dpi=150, bbox_inches="tight")
     plt.close()
 
-
-def _plot_confusion_matrix_by_group(df_bias, var_name, results_dir):
-    n_groups = len(df_bias)
-    ncols = min(3, n_groups)
-    nrows = int(np.ceil(n_groups / ncols))
-
-    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 4.5, nrows * 4))
-    fig.suptitle(f"Matrices de Confusion par sous-groupe — {var_name}", fontsize=12, fontweight="bold")
-    axes_flat = np.array(axes).flatten() if n_groups > 1 else [axes]
-
-    for idx, (_, row) in enumerate(df_bias.iterrows()):
-        ax = axes_flat[idx]
-        cm_group = np.array([[row["TN"], row["FP"]], [row["FN"], row["TP"]]])
-        
-        sns.heatmap(cm_group, annot=True, fmt="d", cmap="Blues", ax=ax, cbar=False,
-                    xticklabels=["Prédit Sain", "Prédit Diab."], yticklabels=["Vrai Sain", "Vrai Diab."],
-                    annot_kws={"size": 12, "weight": "bold"}, linewidths=0.5, linecolor="white")
-        
-        ax.add_patch(plt.Rectangle((0, 1), 1, 1, fill=True, color="#FFCCCC", alpha=0.6, zorder=3))
-        ax.text(0.5, 1.5, f"FN = {row['FN']}", ha="center", va="center", fontsize=9, color="#8B0000", fontweight="bold", zorder=4)
-
-        ax.set_title(f"{row['Sous-groupe']}\nRecall = {row['Recall']:.2f} | n={row['n_diabetiques']}", 
-                     fontsize=10, color="red" if row["Alerte_Recall"] else "black")
-
-    for idx in range(n_groups, len(axes_flat)):
-        axes_flat[idx].set_visible(False)
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(results_dir, f"biais_{var_name}_confusion_matrices.png"), dpi=150, bbox_inches="tight")
-    plt.close()
-
-
 def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, global_metrics):
     print("\n" + "="*60)
     print("  BLOC 2 — ANALYSE DES BIAIS ")
@@ -424,23 +388,41 @@ def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, gl
 
     y_pred = (y_probs >= threshold).astype(int)
     global_recall = global_metrics["recall_opt"]
-    global_auc    = global_metrics["auc"]
     
+    # Calcul du FPR global pour les graphiques
     tn_g = int(((y_pred == 0) & (y_true == 0)).sum())
     fp_g = int(((y_pred == 1) & (y_true == 0)).sum())
     global_fpr = fp_g / (fp_g + tn_g) if (fp_g + tn_g) > 0 else 0.0
 
+    # 1. Reconstruction des groupes simples
     df_groups = reconstruct_groups_robust(df_test_raw)
-    variables  = ["Age", "Sex", "Income", "Education", "GenHlth"]
+    
+    # 2. Création des variables intersectionnelles
+    # On croise le Sexe avec l'Âge, le Revenu et l'Éducation
+    if "Sex" in df_groups.columns:
+        if "Age" in df_groups.columns:
+            df_groups["Sex_x_Age"] = df_groups["Sex"].astype(str) + "\n+ " + df_groups["Age"].astype(str).str.replace("\n", " ")
+        if "Income" in df_groups.columns:
+            df_groups["Sex_x_Income"] = df_groups["Sex"].astype(str) + "\n+ " + df_groups["Income"].astype(str)
+        if "Education" in df_groups.columns:
+            df_groups["Sex_x_Education"] = df_groups["Sex"].astype(str) + "\n+ " + df_groups["Education"].astype(str)
+
+    # 3. Liste complète des variables à analyser (les simples, PUIS les croisées)
+    variables = [
+        "Age", "Sex", "Income", "Education", "GenHlth", # Analyse classique
+        "Sex_x_Age", "Sex_x_Income", "Sex_x_Education"  # Analyse intersectionnelle
+    ]
+
     all_alerts = []
 
+    # 4. Boucle d'analyse universelle
     for var in variables:
         if var not in df_groups.columns: continue
         print(f"\n  ── Variable : {var} ──")
         col = df_groups[var]
         groups = col.dropna().unique()
         
-        total_tests = len(groups) # Pour Bonferroni
+        total_tests = len(groups)
         rows = []
         
         for group in groups:
@@ -448,35 +430,44 @@ def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, gl
             m = _compute_robust_metrics(y_true, y_probs, y_pred, mask, total_tests)
             if m is None: continue
             
+            # SÉCURITÉ : Ignorer les micro-groupes créés par l'intersectionnalité
+            # (Moins de 5 diabétiques = statistiques trop bruyantes/illisibles)
+            if m["n_diabetiques"] < 5:
+                print(f"  [SKIP] '{group.replace(chr(10), ' ')}' ignoré (seulement {m['n_diabetiques']} diabétiques)")
+                continue
+                
             m["Sous-groupe"] = group
             rows.append(m)
 
         if not rows: continue
         df_bias = pd.DataFrame(rows)
 
-        # Disparate Impact
+        # Calcul du Disparate Impact
         ref_pos_rate = df_bias["pos_rate"].max()
         df_bias["DI"] = (df_bias["pos_rate"] / ref_pos_rate).round(4) if ref_pos_rate > 0 else 0.0
 
-        # Tris et Affichage
+        # Tris et Affichage Console
         df_bias = df_bias.sort_values("Recall", ascending=True).reset_index(drop=True)
         cols_show = ["Sous-groupe", "n_diabetiques", "Recall", "CI_TPR", "FPR", "DI", "pvalue_adj", "Alerte_Recall"]
         print(df_bias[cols_show].to_string(index=False))
 
+        # Sauvegarde CSV individuel
         df_bias.to_csv(os.path.join(results_dir, f"biais_{var}.csv"), index=False)
 
-        # Graphiques
+        # Génération des graphiques
+        _plot_disparate_impact(df_bias, var, results_dir)
         _plot_equalized_odds_robust(df_bias, var, global_recall, global_fpr, results_dir)
         _plot_confusion_matrix_by_group(df_bias, var, results_dir)
 
-        # Alertes
+        # Collecte des alertes
         alerts = df_bias[df_bias["Alerte_Recall"]][["Sous-groupe", "Recall", "DI", "pvalue_adj"]].copy()
         if not alerts.empty:
             alerts.insert(0, "Variable", var)
             all_alerts.append(alerts)
 
+    # Bilan global des alertes
     print("\n" + "="*60)
-    print("  TABLEAU D'ALERTES (Z-test Bonferroni)")
+    print("  TABLEAU RÉCAPITULATIF DES ALERTES DE BIAIS")
     print("="*60)
     if all_alerts:
         df_alerts = pd.concat(all_alerts, ignore_index=True)
@@ -484,33 +475,7 @@ def bloc2_bias_analysis(y_true, y_probs, threshold, df_test_raw, results_dir, gl
         print(df_alerts.to_string(index=False))
         df_alerts.to_csv(os.path.join(results_dir, "alertes_biais_global.csv"), index=False)
     else:
-        print("  Aucun biais statistiquement significatif détecté (avec correction de Bonferroni).")
-
-
-# ==============================================================================
-# BLOC 3 — EMPREINTE CARBONE & TEMPS D'EXÉCUTION
-# ==============================================================================
-
-def bloc3_carbon(config, inference_emissions_kg, inference_duration_s, total_duration_s, results_dir):
-    print("\n" + "="*60)
-    print("  BLOC 3 — EMPREINTE CARBONE")
-    print("="*60)
-
-    power_w    = DEVICE_POWER_W[config["TRAINING_DEVICE"]]
-    factor     = EMISSION_FACTORS.get(config["COUNTRY_CODE"], EMISSION_FACTORS["FR"])
-    
-    training_co2_g  = (power_w * config["OPTUNA_DURATION_H"] / 1000) * factor
-    inference_co2_g = inference_emissions_kg * 1000
-    total_co2_g     = training_co2_g + inference_co2_g
-
-    print(f"  Empreinte inférence (CodeCarbon)    : {inference_co2_g:.4f} g")
-    print(f"  Empreinte entraînement (estimation) : {training_co2_g:.2f} g")
-    print(f"  TOTAL CO₂ projet                    : {total_co2_g:.2f} g CO₂eq\n")
-
-    # [Le reste du code de visualisation de l'empreinte carbone reste identique]
-    # (omis ici par pure concision pour l'affichage terminal, mais gardez 
-    # votre graphique à barres horizontal pour les comparaisons).
-
+        print("  Aucun biais statistiquement significatif détecté (simples ou croisés).")
 
 # ==============================================================================
 # POINT D'ENTRÉE PRINCIPAL
@@ -518,7 +483,6 @@ def bloc3_carbon(config, inference_emissions_kg, inference_duration_s, total_dur
 
 def main():
     script_start = time.perf_counter()
-
     print("\n" + "="*60)
     print("  ÉVALUATION FINALE")
     print("="*60)
@@ -529,23 +493,12 @@ def main():
     model = load_model(CONFIG, device)
     _, _, test_loader = get_dataloaders(CONFIG["TRAIN_PATH"], CONFIG["VAL_PATH"], CONFIG["TEST_PATH"], batch_size=CONFIG["BATCH_SIZE"])
     
-    print("[INFO] Inférence en cours (CodeCarbon actif)...")
     tracker = EmissionsTracker(project_name="diabetes_inference", output_dir=results_dir, log_level="error", save_to_file=True)
-    
     y_true, y_probs, inference_duration_s = get_predictions(model, test_loader, device, tracker=tracker)
 
-    emissions_csv = os.path.join(results_dir, "emissions.csv")
-    inference_emissions = pd.read_csv(emissions_csv)["emissions"].iloc[-1] if os.path.exists(emissions_csv) else 0.0
-
-    # BLOC 1
     global_metrics = bloc1_evaluation(y_true, y_probs, CONFIG["OPTIMAL_THRESHOLD"], results_dir)
-
-    # BLOC 2
     df_test_raw = pd.read_csv(CONFIG["TEST_PATH"])
     bloc2_bias_analysis(y_true, y_probs, CONFIG["OPTIMAL_THRESHOLD"], df_test_raw, results_dir, global_metrics)
-
-    # BLOC 3
-    bloc3_carbon(CONFIG, inference_emissions, inference_duration_s, time.perf_counter() - script_start, results_dir)
 
 if __name__ == "__main__":
     main()
