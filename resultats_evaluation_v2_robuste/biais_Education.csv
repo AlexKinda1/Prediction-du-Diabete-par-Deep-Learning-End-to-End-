@@ -1,3 +1,0 @@
-n_total,n_diabetiques,Recall,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
-23267,3077,0.7725,0.2704,0.0148,0.0061,2377,700,5460,14730,0.3368,0.0,True,(Niv.5-6),0.6605
-11155,2188,0.8551,0.4257,0.0147,0.0102,1871,317,3817,5150,0.5099,0.0,False,(Niv.1-4),1.0

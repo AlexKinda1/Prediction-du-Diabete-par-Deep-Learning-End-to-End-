@@ -66,7 +66,7 @@ def plot_environmental_impact():
     
     # Pour donner un ordre de grandeur amusant et parlant
     km_voiture = emissions_grams / 120 # Moyenne: 120g CO2 / km pour une voiture essence
-    texte_comparaison = f"\n\n🚗 Équivalent : Conduire {km_voiture:.5f} km en voiture."
+    texte_comparaison = f"\n\nÉquivalent : Conduire {km_voiture:.5f} km en voiture."
     
     plt.text(0.1, 0.5, texte_bilan + texte_comparaison, fontsize=14, 
              verticalalignment='center', bbox=dict(boxstyle="round,pad=1", facecolor='#e8f6f3', edgecolor='#1abc9c'))
