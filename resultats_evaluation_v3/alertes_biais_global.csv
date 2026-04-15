@@ -1,22 +1,22 @@
 Variable,Sous-groupe,Recall,DI,pvalue_adj,Recall_global
-Age,"Jeunes adultes
-(18-44 ans)",0.4562,0.1292,0.0,0.8068
 Age,"Adultes
 (45-64 ans)",0.7848,0.6219,0.0016,0.8068
+Age,"Jeunes adultes
+(18-44 ans)",0.4562,0.1292,0.0,0.8068
 Sex,Femmes,0.7942,0.8082,0.0344,0.8068
 Income,Revenus élevés,0.7068,0.4471,0.0,0.8068
 Education,(Niv.5-6),0.7725,0.6605,0.0,0.8068
-GenHlth,(1),0.2899,0.0456,0.0,0.8068
 GenHlth,(2),0.5012,0.2076,0.0,0.8068
+GenHlth,(1),0.2899,0.0456,0.0,0.8068
+Sex_x_Age,"Hommes
++ Adultes (45-64 ans)",0.7764,0.5966,0.0275,0.8068
 Sex_x_Age,"Hommes
 + Jeunes adultes (18-44 ans)",0.4444,0.1139,0.0,0.8068
 Sex_x_Age,"Femmes
 + Jeunes adultes (18-44 ans)",0.4639,0.1111,0.0,0.8068
-Sex_x_Age,"Hommes
-+ Adultes (45-64 ans)",0.7764,0.5966,0.0275,0.8068
-Sex_x_Income,"Femmes
-+ Revenus élevés",0.6427,0.3184,0.0,0.8068
 Sex_x_Income,"Hommes
 + Revenus élevés",0.7477,0.5587,0.0,0.8068
+Sex_x_Income,"Femmes
++ Revenus élevés",0.6427,0.3184,0.0,0.8068
 Sex_x_Education,"Femmes
 + (Niv.5-6)",0.752,0.548,0.0,0.8068

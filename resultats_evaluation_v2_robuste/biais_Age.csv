@@ -1,7 +1,0 @@
-n_total,n_diabetiques,Recall,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
-7385,320,0.4562,0.0604,0.0546,0.0056,146,174,427,6638,0.0776,0.0,True,"Jeunes adultes
-(18-44 ans)",0.1292
-14453,2231,0.7848,0.2983,0.0171,0.0081,1751,480,3646,8576,0.3734,0.0016,True,"Adultes
-(45-64 ans)",0.6219
-12584,2714,0.8662,0.5273,0.0128,0.0098,2351,363,5204,4666,0.6004,0.0,False,"Seniors
-(65 ans et +)",1.0

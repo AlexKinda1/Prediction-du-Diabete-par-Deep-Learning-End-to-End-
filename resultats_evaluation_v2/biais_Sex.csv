@@ -1,3 +1,0 @@
-n_total,n_diabetiques,pct_diab,ROC_AUC,Recall,Precision,F1,TPR,FPR,TP,FN,FP,TN,pos_rate,Sous-groupe,pvalue_Recall,Alerte_Recall,DI
-19075,2707,14.2,0.8316,0.7665,0.326,0.4575,0.7665,0.2621,2075,632,4290,12078,0.3337,Femmes,0.8285,False,0.8303
-15347,2558,16.7,0.7985,0.7709,0.3197,0.452,0.7709,0.3281,1972,586,4196,8593,0.4019,Hommes,0.8256,False,1.0
