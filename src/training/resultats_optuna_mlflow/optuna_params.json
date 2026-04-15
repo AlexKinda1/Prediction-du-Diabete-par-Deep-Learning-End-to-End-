@@ -1,0 +1,9 @@
+{
+  "hidden_dims": [64, 32, 16],
+  "dropout_rate": 0.238653,
+  "optimal_threshold": 0.355266,
+  "learning_rate": 0.003386,
+  "weight_decay": 0.000036,
+  "n_layers": 3,
+  "trial_number": 7
+}
