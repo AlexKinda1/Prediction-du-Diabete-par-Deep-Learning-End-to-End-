@@ -1,0 +1,23 @@
+artifact_path: file:C:/Users/dell/Desktop/Prediction-du-Diabete-par-Deep-Learning-End-to-End--main/src/training/mlruns/1/models/m-488bfa52511c44759b822a4ddeb40119/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.13.2
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.11.0+cpu
+mlflow_version: 3.11.1
+model_id: m-488bfa52511c44759b822a4ddeb40119
+model_size_bytes: 31936
+model_uuid: m-488bfa52511c44759b822a4ddeb40119
+prompts: null
+run_id: 9c2b01421a0447b990f96f0dca35af89
+utc_time_created: '2026-04-13 22:43:01.744067'

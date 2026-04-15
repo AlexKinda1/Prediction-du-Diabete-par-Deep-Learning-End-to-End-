@@ -1,0 +1,4 @@
+n_total,n_diabetiques,Recall,FPR,CI_TPR,CI_FPR,TP,FN,FP,TN,pos_rate,pvalue_adj,Alerte_Recall,Sous-groupe,DI
+16687,1818,0.6513,0.1984,0.0219,0.0064,1184,634,2950,11919,0.2477,0.0,True,Revenus élevés,0.4148
+12083,2052,0.7982,0.3524,0.0174,0.0093,1638,414,3535,6496,0.4281,0.0011,False,Revenus moyens,0.717
+5652,1395,0.8925,0.5004,0.0163,0.015,1245,150,2130,2127,0.5971,0.0,False,Faibles revenus,1.0
