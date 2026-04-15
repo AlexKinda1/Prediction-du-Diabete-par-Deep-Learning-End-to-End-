@@ -1,0 +1,15 @@
+MÉTRIQUES GLOBALES (Seuil = 0.3553)
+----------------------------------------
+ROC AUC           : 0.8218
+Average Precision : 0.4528
+Accuracy          : 0.7009
+F1-Score          : 0.4522
+
+                precision    recall  f1-score   support
+
+      Sain (0)       0.95      0.68      0.79     29157
+Diabétique (1)       0.31      0.81      0.45      5265
+
+      accuracy                           0.70     34422
+     macro avg       0.63      0.74      0.62     34422
+  weighted avg       0.85      0.70      0.74     34422

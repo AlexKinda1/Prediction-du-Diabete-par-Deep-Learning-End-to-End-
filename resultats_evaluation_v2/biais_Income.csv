@@ -1,4 +1,0 @@
-n_total,n_diabetiques,pct_diab,ROC_AUC,Recall,Precision,F1,TPR,FPR,TP,FN,FP,TN,pos_rate,Sous-groupe,pvalue_Recall,Alerte_Recall,DI
-16687,1818,10.9,0.8212,0.6458,0.2892,0.3995,0.6458,0.1941,1174,644,2886,11983,0.2433,Revenus élevés,0.0,True,0.4106
-12083,2052,17.0,0.8005,0.7948,0.3183,0.4546,0.7948,0.3482,1631,421,3493,6538,0.4241,Revenus moyens,0.0172,False,0.7158
-5652,1395,24.7,0.786,0.8903,0.3709,0.5236,0.8903,0.4949,1242,153,2107,2150,0.5925,Faibles revenus,0.0,False,1.0
